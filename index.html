@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fable — Your Travel Helper</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--rose:#f4c6cc;--mint:#c7ece4;--lavender:#ddd6f3;--text:#5a4a5a;--soft:#9e8a9e;--card:rgba(255,255,255,0.75);}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:linear-gradient(135deg,#fde8ee 0%,#fef3e8 25%,#fdf8e8 50%,#e8f7f2 75%,#eae8f9 100%);min-height:100vh;color:var(--text);padding:2rem 1rem 4rem;}
+body::before,body::after{content:'';position:fixed;border-radius:50%;filter:blur(80px);opacity:.35;pointer-events:none;z-index:0;}
+body::before{width:500px;height:500px;background:var(--rose);top:-100px;left:-100px;}
+body::after{width:400px;height:400px;background:var(--mint);bottom:-80px;right:-80px;}
+.wrap{max-width:740px;margin:0 auto;position:relative;z-index:1;}
+header{text-align:center;margin-bottom:2rem;}
+header h1{font-family:'Playfair Display',serif;font-size:clamp(2rem,5vw,2.8rem);color:var(--text);}
+header h1 span{color:#c48a9a;font-style:italic;}
+header p{margin-top:.4rem;font-size:.9rem;color:var(--soft);}
+.badge{display:inline-block;margin-top:.6rem;background:var(--card);border:1px solid #f0d8e0;border-radius:99px;padding:.2rem .9rem;font-size:.78rem;color:var(--soft);}
+.tabs{display:flex;gap:.5rem;margin-bottom:1.5rem;background:var(--card);border-radius:16px;padding:.4rem;border:1px solid rgba(255,255,255,.8);}
+.tab{flex:1;padding:.6rem;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:.82rem;color:var(--soft);background:transparent;cursor:pointer;transition:all .2s;}
+.tab.active{background:linear-gradient(135deg,#f4c6cc,#ddd6f3);color:var(--text);font-weight:500;}
+.card{background:var(--card);border-radius:24px;padding:1.8rem;backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.8);box-shadow:0 8px 40px rgba(180,140,160,.12);margin-bottom:1.5rem;}
+.section{display:none;}.section.active{display:block;}
+label{display:block;font-size:.78rem;font-weight:500;color:var(--soft);letter-spacing:.04em;text-transform:uppercase;margin-bottom:.4rem;}
+.input-row{position:relative;}
+textarea{width:100%;min-height:100px;border:1.5px solid #f0d8e4;border-radius:14px;padding:.9rem 3rem .9rem .9rem;font-family:'DM Sans',sans-serif;font-size:1rem;color:var(--text);background:rgba(255,255,255,.6);resize:vertical;outline:none;transition:border .2s;}
+textarea:focus{border-color:#c48a9a;background:#fff;}
+textarea::placeholder{color:#c5b0c5;}
+.mic-btn{position:absolute;right:.7rem;bottom:.7rem;width:36px;height:36px;border-radius:50%;border:none;background:linear-gradient(135deg,#f4c6cc,#ddd6f3);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:transform .15s;}
+.mic-btn:hover{transform:scale(1.1);}
+.mic-btn.listening{background:linear-gradient(135deg,#ff9a9e,#f4c6cc);animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(196,138,154,.4)}50%{box-shadow:0 0 0 8px rgba(196,138,154,0)}}
+.lang-picker-btn{width:100%;padding:.8rem 1rem;border-radius:14px;border:1.5px solid #eddee8;background:rgba(255,255,255,.6);font-family:'DM Sans',sans-serif;font-size:.95rem;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:all .2s;margin-top:.4rem;}
+.lang-picker-btn:hover{border-color:#c48a9a;background:#fff;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(90,74,90,.3);backdrop-filter:blur(6px);z-index:100;align-items:center;justify-content:center;}
+.modal-overlay.show{display:flex;}
+.modal{background:#fff;border-radius:24px;padding:1.8rem;width:90%;max-width:520px;box-shadow:0 20px 60px rgba(180,140,160,.3);animation:popIn .25s ease;}
+@keyframes popIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem;}
+.modal-title{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--text);}
+.modal-close{background:none;border:none;font-size:1.4rem;color:var(--soft);cursor:pointer;}
+.modal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.5rem;}
+.modal-lang-btn{padding:.6rem .5rem;border-radius:12px;border:1.5px solid #eddee8;background:rgba(255,255,255,.5);font-family:'DM Sans',sans-serif;font-size:.82rem;color:var(--soft);cursor:pointer;transition:all .18s;text-align:center;}
+.modal-lang-btn:hover{border-color:#c48a9a;color:#c48a9a;}
+.modal-lang-btn.active{background:linear-gradient(135deg,#f4c6cc,#ddd6f3);border-color:transparent;color:var(--text);font-weight:500;}
+.btn-translate{width:100%;margin-top:1rem;padding:.9rem;border:none;border-radius:14px;background:linear-gradient(135deg,#f4c6cc,#ddd6f3);font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:500;color:var(--text);cursor:pointer;transition:transform .15s,box-shadow .15s;box-shadow:0 4px 20px rgba(180,140,160,.25);}
+.btn-translate:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(180,140,160,.35);}
+.result-box{display:none;margin-top:1rem;padding:1.1rem 1.3rem;background:linear-gradient(135deg,rgba(199,236,228,.4),rgba(221,214,243,.4));border-radius:16px;border:1.5px solid rgba(199,236,228,.6);animation:popIn .3s ease;}
+.result-box.show{display:block;}
+.result-label{font-size:.72rem;color:var(--soft);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.3rem;}
+.result-text{font-family:'Playfair Display',serif;font-size:1.25rem;color:var(--text);line-height:1.5;}
+.result-lang{margin-top:.3rem;font-size:.8rem;color:#c48a9a;}
+.result-actions{display:flex;gap:.5rem;margin-top:.8rem;}
+.action-btn{padding:.4rem .9rem;border-radius:10px;border:1.5px solid #eddee8;background:rgba(255,255,255,.6);font-family:'DM Sans',sans-serif;font-size:.78rem;color:var(--soft);cursor:pointer;transition:all .15s;}
+.action-btn:hover{border-color:#c48a9a;color:#c48a9a;}
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;}
+.section-title{font-family:'Playfair Display',serif;font-size:1.05rem;}
+.clear-btn{background:none;border:1.5px solid #eddee8;border-radius:10px;padding:.35rem .8rem;font-size:.78rem;color:var(--soft);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;}
+.clear-btn:hover{border-color:#c48a9a;color:#c48a9a;}
+.history-list{list-style:none;}
+.history-list li{padding:.65rem .9rem;border-radius:12px;background:rgba(255,255,255,.5);margin-bottom:.4rem;font-size:.85rem;border:1px solid rgba(240,216,228,.5);display:flex;align-items:center;gap:.6rem;}
+.history-list li .orig{color:var(--soft);flex:1;}
+.history-list li .arrow{color:#c48a9a;flex-shrink:0;}
+.history-list li .trans{font-weight:500;flex:1;}
+.empty-history{text-align:center;color:var(--soft);font-size:.88rem;padding:1.5rem 0;font-style:italic;}
+.country-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.5rem;margin-bottom:1.2rem;}
+.country-btn{padding:.6rem .5rem;border-radius:12px;border:1.5px solid #eddee8;background:rgba(255,255,255,.5);font-family:'DM Sans',sans-serif;font-size:.82rem;color:var(--soft);cursor:pointer;transition:all .18s;text-align:center;}
+.country-btn:hover{border-color:#c48a9a;color:#c48a9a;}
+.country-btn.active{background:linear-gradient(135deg,#fad7c0,#f4c6cc);border-color:transparent;color:var(--text);font-weight:500;}
+.phrase-list{list-style:none;}
+.phrase-list li{padding:.7rem 1rem;border-radius:12px;background:rgba(255,255,255,.5);margin-bottom:.4rem;border:1px solid rgba(240,216,228,.5);display:flex;justify-content:space-between;align-items:center;gap:1rem;}
+.phrase-list li .en{color:var(--soft);font-size:.85rem;flex:1;}
+.phrase-list li .tr{font-weight:500;font-size:.85rem;flex:1;}
+.phrase-speak{background:none;border:none;cursor:pointer;font-size:1rem;color:#c48a9a;}
+.sign-card{display:flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.85);border-radius:14px;padding:.6rem .4rem;border:1.5px solid #eddee8;min-width:62px;cursor:default;}
+.sign-emoji{font-size:2.2rem;line-height:1;}
+.sign-letter{font-size:.85rem;font-weight:700;color:#c48a9a;margin-top:.2rem;}
+.sign-desc{font-size:.55rem;color:var(--soft);margin-top:.1rem;text-align:center;max-width:62px;line-height:1.3;}
+.common-sign{background:rgba(255,255,255,.6);border-radius:14px;padding:.8rem .5rem;text-align:center;border:1.5px solid #eddee8;cursor:pointer;transition:all .2s;}
+.common-sign:hover{border-color:#c48a9a;}
+.common-sign .cs-emoji{font-size:2rem;}
+.common-sign .cs-word{font-size:.78rem;margin-top:.3rem;color:var(--text);font-weight:500;}
+footer{text-align:center;margin-top:1.5rem;font-size:.75rem;color:#c5b0c5;}
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:#5a4a5a;color:#fff;padding:.6rem 1.4rem;border-radius:99px;font-size:.85rem;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;}
+.toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Fa<span>ble</span></h1>
+    <p>Translate · Scan · Explore the World 🌍</p>
+    <span class="badge">✦ Advanced C Programming Project</span>
+  </header>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('translate',this)">🌸 Translate</button>
+    <button class="tab" onclick="switchTab('travel',this)">🌍 Travel</button>
+    <button class="tab" onclick="switchTab('sign',this)">🤟 Sign</button>
+    <button class="tab" onclick="switchTab('food',this)">🥗 Food</button>
+  </div>
+
+  <!-- TRANSLATE -->
+  <div class="section active" id="translate">
+    <div class="card">
+      <label>Type or speak in any language</label>
+      <div class="input-row">
+        <textarea id="inputText" placeholder="hello, how are you…"></textarea>
+        <button class="mic-btn" id="micBtn" onclick="toggleMic()" title="Voice input">🎤</button>
+      </div>
+      <label style="margin-top:1rem">From language</label>
+      <button class="lang-picker-btn" id="fromLangPickerBtn" onclick="openFromModal()">
+        <span id="selectedFromLangDisplay">🌐 Auto Detect</span>
+        <span style="color:var(--soft);font-size:.8rem">▼ choose</span>
+      </button>
+      <label style="margin-top:1rem">To language</label>
+      <button class="lang-picker-btn" id="langPickerBtn" onclick="openModal()">
+        <span id="selectedLangDisplay">🇪🇸 Spanish</span>
+        <span style="color:var(--soft);font-size:.8rem">▼ choose</span>
+      </button>
+      <button class="btn-translate" onclick="doTranslate()">Translate ✦</button>
+      <div class="result-box" id="resultBox">
+        <div class="result-label">Translation</div>
+        <div class="result-text" id="resultText"></div>
+        <div class="result-lang" id="resultLang"></div>
+        <div class="result-actions">
+          <button class="action-btn" onclick="copyTranslation()">📋 Copy</button>
+          <button class="action-btn" onclick="speakTranslation()">🔊 Listen</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-header">
+        <span class="section-title">History</span>
+        <button class="clear-btn" onclick="clearHistory()">Clear</button>
+      </div>
+      <ul class="history-list" id="historyList">
+        <li class="empty-history">No translations yet 🌸</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- TRAVEL -->
+  <div class="section" id="travel">
+    <div class="card">
+      <label>Pick a destination</label>
+      <div class="country-grid" id="countryGrid"></div>
+      <ul class="phrase-list" id="phraseList">
+        <li style="color:var(--soft);font-style:italic;padding:.5rem 0">Pick a country to see useful phrases 🌍</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- SIGN LANGUAGE -->
+  <div class="section" id="sign">
+    <div class="card">
+      <label>Type in any language</label>
+      <textarea id="signInput" placeholder="hello… or 안녕하세요… or bonjour…" style="min-height:80px;"></textarea>
+      <p style="font-size:.75rem;color:var(--soft);margin-top:.4rem;">✨ Any language → auto-finds English → shows universal sign language</p>
+      <button class="btn-translate" onclick="doSign()">Show Sign Language 🤟</button>
+    </div>
+    <div class="card" id="signResultCard" style="display:none">
+      <div class="section-header">
+        <span class="section-title">Universal Sign Language</span>
+        <span style="font-size:.78rem;color:var(--soft)">Fingerspelling</span>
+      </div>
+      <div id="signEnglish" style="font-size:.82rem;color:var(--soft);margin-bottom:.8rem;"></div>
+      <div id="signResult" style="display:flex;flex-wrap:wrap;gap:.6rem;align-items:flex-end;justify-content:center;"></div>
+      <p style="margin-top:1rem;font-size:.78rem;color:var(--soft);text-align:center;">Universal hand signs — understood worldwide 🌍🤟</p>
+    </div>
+    <div class="card">
+      <div class="section-header"><span class="section-title">Common Signs</span></div>
+      <div id="commonSigns" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:.8rem;"></div>
+    </div>
+  </div>
+
+<!-- FOOD INGREDIENT SCANNER SECTION -->
+<style>
+/* Food Scanner styles */
+.food-upload-zone{border:2px dashed #f0c4ce;border-radius:18px;padding:2rem 1.5rem;text-align:center;cursor:pointer;transition:all .2s;background:rgba(255,255,255,.4);position:relative;}
+.food-upload-zone:hover,.food-upload-zone.drag-over{border-color:#c48a9a;background:rgba(244,198,204,.12);}
+.food-upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.food-upload-icon{font-size:2.4rem;margin-bottom:.5rem;}
+.food-upload-text{font-size:.9rem;color:var(--soft);line-height:1.5;}
+.food-preview-img{width:100%;max-height:220px;object-fit:contain;border-radius:14px;margin-top:1rem;border:1px solid #f0d8e4;display:none;}
+.allergy-section-title{font-family:'Playfair Display',serif;font-size:1rem;color:var(--text);margin-bottom:.8rem;}
+.allergy-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:.45rem;margin-bottom:.8rem;}
+.allergy-chip{display:flex;align-items:center;gap:.4rem;padding:.5rem .75rem;border-radius:10px;border:1.5px solid #eddee8;background:rgba(255,255,255,.5);font-size:.78rem;color:var(--soft);cursor:pointer;transition:all .18s;user-select:none;}
+.allergy-chip:hover{border-color:#c48a9a;}
+.allergy-chip.selected{border-color:transparent;font-weight:500;color:#fff;}
+.allergy-chip.selected.danger{background:linear-gradient(135deg,#ff8fa3,#f77f8c);}
+.allergy-chip.selected.caution{background:linear-gradient(135deg,#f6b47a,#f0a55e);}
+.allergy-chip.selected.safe{background:linear-gradient(135deg,#7ecfb8,#5bc4a8);}
+.allergy-chip .chip-dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0;}
+.custom-allergy-row{display:flex;gap:.5rem;margin-top:.5rem;}
+.custom-allergy-input{flex:1;padding:.55rem .9rem;border-radius:10px;border:1.5px solid #eddee8;font-family:'DM Sans',sans-serif;font-size:.85rem;color:var(--text);background:rgba(255,255,255,.6);outline:none;}
+.custom-allergy-input:focus{border-color:#c48a9a;}
+.custom-allergy-btn{padding:.55rem 1rem;border-radius:10px;border:none;background:linear-gradient(135deg,#f4c6cc,#ddd6f3);font-family:'DM Sans',sans-serif;font-size:.82rem;color:var(--text);cursor:pointer;white-space:nowrap;}
+.scan-result-card{margin-top:1rem;border-radius:16px;overflow:hidden;animation:popIn .3s ease;}
+.scan-verdict{display:flex;align-items:center;gap:1rem;padding:1.1rem 1.3rem;}
+.scan-verdict.safe-verdict{background:linear-gradient(135deg,rgba(126,207,184,.25),rgba(91,196,168,.15));}
+.scan-verdict.warn-verdict{background:linear-gradient(135deg,rgba(246,180,122,.25),rgba(240,165,94,.15));}
+.scan-verdict.danger-verdict{background:linear-gradient(135deg,rgba(255,143,163,.25),rgba(247,127,140,.15));}
+.verdict-icon{font-size:2rem;flex-shrink:0;}
+.verdict-text h3{font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--text);}
+.verdict-text p{font-size:.8rem;color:var(--soft);margin-top:.15rem;}
+.ingredient-breakdown{padding:1rem 1.3rem;background:rgba(255,255,255,.45);}
+.breakdown-title{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--soft);margin-bottom:.6rem;}
+.ingredient-pill-row{display:flex;flex-wrap:wrap;gap:.4rem;}
+.ing-pill{padding:.35rem .75rem;border-radius:99px;font-size:.78rem;font-weight:500;}
+.ing-pill.safe{background:rgba(126,207,184,.25);color:#2a9d7a;border:1px solid rgba(126,207,184,.5);}
+.ing-pill.caution{background:rgba(246,180,122,.25);color:#c06a10;border:1px solid rgba(246,180,122,.5);}
+.ing-pill.danger{background:rgba(255,143,163,.3);color:#c0243a;border:1px solid rgba(255,143,163,.5);}
+.ing-pill.unknown{background:rgba(158,138,158,.15);color:var(--soft);border:1px solid rgba(158,138,158,.25);}
+.scan-loading{text-align:center;padding:1.5rem;color:var(--soft);font-size:.9rem;font-style:italic;}
+.scan-loading .spin{display:inline-block;animation:spin 1s linear infinite;margin-right:.4rem;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.legend-row{display:flex;gap:.8rem;flex-wrap:wrap;margin-top:.8rem;font-size:.72rem;color:var(--soft);}
+.legend-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:.25rem;}
+</style>
+
+
+  <div class="section" id="food">
+    <!-- Allergen Pre-selection Card -->
+    <div class="card">
+      <div class="allergy-section-title">🌿 My Dietary Restrictions & Allergies</div>
+      <p style="font-size:.8rem;color:var(--soft);margin-bottom:1rem;">Select ingredients you're allergic to or can't eat. These will be flagged when scanning food labels.</p>
+      <div class="allergy-grid" id="allergyGrid"></div>
+      <div class="custom-allergy-row">
+        <input class="custom-allergy-input" id="customAllergyInput" placeholder="Add custom ingredient (e.g. sesame)" />
+        <button class="custom-allergy-btn" onclick="addCustomAllergy()">+ Add</button>
+      </div>
+      <div class="legend-row">
+        <span><span class="legend-dot" style="background:#ff8fa3;"></span>Danger — avoid</span>
+        <span><span class="legend-dot" style="background:#f6b47a;"></span>Caution — limit</span>
+        <span><span class="legend-dot" style="background:#7ecfb8;"></span>Safe for you</span>
+      </div>
+    </div>
+
+    <!-- Barcode Scanner Card -->
+    <div class="card">
+      <div class="allergy-section-title">🔍 Barcode Food Scanner</div>
+      <p style="font-size:.8rem;color:var(--soft);margin-bottom:1rem;">Type a barcode number to instantly look up any food product and check it against your allergies. Uses the Open Food Facts global database — no API key needed!</p>
+      <div style="display:flex;gap:.5rem;margin-bottom:.8rem;">
+        <input id="barcodeInput" placeholder="e.g. 3017620422003 (Nutella)" style="flex:1;padding:.75rem 1rem;border-radius:12px;border:1.5px solid #eddee8;font-family:'DM Sans',sans-serif;font-size:.95rem;color:var(--text);background:rgba(255,255,255,.6);outline:none;" />
+        <button class="custom-allergy-btn" onclick="doBarcodeScan()" style="padding:.75rem 1.2rem;font-size:.9rem;">🔍 Look Up</button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.8rem;">
+        <span style="font-size:.75rem;color:var(--soft);width:100%;margin-bottom:.2rem;">Try these examples:</span>
+        <button class="action-btn" onclick="quickScan('3017620422003')">🍫 Nutella</button>
+        <button class="action-btn" onclick="quickScan('5000159484695')">🍫 KitKat</button>
+        <button class="action-btn" onclick="quickScan('7613035352247')">🥣 Milo</button>
+        <button class="action-btn" onclick="quickScan('8076800195057')">🍝 Barilla</button>
+        <button class="action-btn" onclick="quickScan('0038000845559')">🥣 Corn Flakes</button>
+      </div>
+      <div id="scanResult"></div>
+    </div>
+  </div>
+
+  <footer>Made with care · Advanced C Programming · 2025</footer>
+</div>
+
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Translate to</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-grid" id="modalGrid"></div>
+  </div>
+</div>
+<div class="modal-overlay" id="fromModalOverlay" onclick="handleFromOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Translate from</span>
+      <button class="modal-close" onclick="closeFromModal()">✕</button>
+    </div>
+    <div class="modal-grid" id="fromModalGrid"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const dict={hello:{Spanish:"hola",French:"bonjour",German:"hallo",Turkish:"merhaba",Arabic:"مرحبا",Hindi:"नमस्ते",Portuguese:"olá",Russian:"привет",Japanese:"こんにちは",Korean:"안녕하세요",Chinese:"你好",Italian:"ciao",Dutch:"hallo",Polish:"cześć",Urdu:"ہیلو",Uzbek:"salom"},goodbye:{Spanish:"adiós",French:"au revoir",German:"auf wiedersehen",Turkish:"hoşça kal",Arabic:"وداعا",Hindi:"अलविदा",Portuguese:"adeus",Russian:"пока",Japanese:"さようなら",Korean:"안녕히",Chinese:"再见",Italian:"arrivederci",Dutch:"tot ziens",Polish:"do widzenia",Urdu:"الوداع",Uzbek:"xayr"},yes:{Spanish:"sí",French:"oui",German:"ja",Turkish:"evet",Arabic:"نعم",Hindi:"हाँ",Portuguese:"sim",Russian:"да",Japanese:"はい",Korean:"네",Chinese:"是",Italian:"sì",Dutch:"ja",Polish:"tak",Urdu:"ہاں",Uzbek:"ha"},no:{Spanish:"no",French:"non",German:"nein",Turkish:"hayır",Arabic:"لا",Hindi:"नहीं",Portuguese:"não",Russian:"нет",Japanese:"いいえ",Korean:"아니요",Chinese:"不",Italian:"no",Dutch:"nee",Polish:"nie",Urdu:"نہیں",Uzbek:"yo'q"},please:{Spanish:"por favor",French:"s'il vous plaît",German:"bitte",Turkish:"lütfen",Arabic:"من فضلك",Hindi:"कृपया",Portuguese:"por favor",Russian:"пожалуйста",Japanese:"どうぞ",Korean:"제발",Chinese:"请",Italian:"per favore",Dutch:"alstublieft",Polish:"proszę",Urdu:"براہ کرم",Uzbek:"iltimos"},"thank you":{Spanish:"gracias",French:"merci",German:"danke",Turkish:"teşekkür",Arabic:"شكرا",Hindi:"धन्यवाद",Portuguese:"obrigado",Russian:"спасибо",Japanese:"ありがとう",Korean:"감사합니다",Chinese:"谢谢",Italian:"grazie",Dutch:"dank je",Polish:"dziękuję",Urdu:"شکریہ",Uzbek:"rahmat"},sorry:{Spanish:"lo siento",French:"désolé",German:"entschuldigung",Turkish:"özür dilerim",Arabic:"آسف",Hindi:"माफ करना",Portuguese:"desculpe",Russian:"извините",Japanese:"ごめんなさい",Korean:"죄송합니다",Chinese:"对不起",Italian:"scusa",Dutch:"sorry",Polish:"przepraszam",Urdu:"معاف کریں",Uzbek:"kechirasiz"},help:{Spanish:"ayuda",French:"aide",German:"hilfe",Turkish:"yardım",Arabic:"مساعدة",Hindi:"मदद",Portuguese:"ajuda",Russian:"помощь",Japanese:"助けて",Korean:"도움",Chinese:"帮助",Italian:"aiuto",Dutch:"hulp",Polish:"pomoc",Urdu:"مدد",Uzbek:"yordam"},water:{Spanish:"agua",French:"eau",German:"wasser",Turkish:"su",Arabic:"ماء",Hindi:"पानी",Portuguese:"água",Russian:"вода",Japanese:"水",Korean:"물",Chinese:"水",Italian:"acqua",Dutch:"water",Polish:"woda",Urdu:"پانی",Uzbek:"suv"},food:{Spanish:"comida",French:"nourriture",German:"essen",Turkish:"yemek",Arabic:"طعام",Hindi:"खाना",Portuguese:"comida",Russian:"еда",Japanese:"食べ物",Korean:"음식",Chinese:"食物",Italian:"cibo",Dutch:"eten",Polish:"jedzenie",Urdu:"کھانا",Uzbek:"ovqat"},love:{Spanish:"amor",French:"amour",German:"liebe",Turkish:"aşk",Arabic:"حب",Hindi:"प्यार",Portuguese:"amor",Russian:"любовь",Japanese:"愛",Korean:"사랑",Chinese:"爱",Italian:"amore",Dutch:"liefde",Polish:"miłość",Urdu:"محبت",Uzbek:"muhabbat"},good:{Spanish:"bueno",French:"bon",German:"gut",Turkish:"iyi",Arabic:"جيد",Hindi:"अच्छा",Portuguese:"bom",Russian:"хорошо",Japanese:"良い",Korean:"좋다",Chinese:"好",Italian:"buono",Dutch:"goed",Polish:"dobry",Urdu:"اچھا",Uzbek:"yaxshi"},bad:{Spanish:"malo",French:"mauvais",German:"schlecht",Turkish:"kötü",Arabic:"سيء",Hindi:"बुरा",Portuguese:"mau",Russian:"плохо",Japanese:"悪い",Korean:"나쁘다",Chinese:"坏",Italian:"cattivo",Dutch:"slecht",Polish:"zły",Urdu:"برا",Uzbek:"yomon"},friend:{Spanish:"amigo",French:"ami",German:"freund",Turkish:"arkadaş",Arabic:"صديق",Hindi:"दोस्त",Portuguese:"amigo",Russian:"друг",Japanese:"友達",Korean:"친구",Chinese:"朋友",Italian:"amico",Dutch:"vriend",Polish:"przyjaciel",Urdu:"دوست",Uzbek:"do'st"},happy:{Spanish:"feliz",French:"heureux",German:"glücklich",Turkish:"mutlu",Arabic:"سعيد",Hindi:"खुश",Portuguese:"feliz",Russian:"счастливый",Japanese:"嬉しい",Korean:"행복하다",Chinese:"快乐",Italian:"felice",Dutch:"blij",Polish:"szczęśliwy",Urdu:"خوش",Uzbek:"baxtli"},beautiful:{Spanish:"hermoso",French:"beau",German:"schön",Turkish:"güzel",Arabic:"جميل",Hindi:"सुंदर",Portuguese:"bonito",Russian:"красивый",Japanese:"美しい",Korean:"아름답다",Chinese:"美丽",Italian:"bello",Dutch:"mooi",Polish:"piękny",Urdu:"خوبصورت",Uzbek:"chiroyli"},family:{Spanish:"familia",French:"famille",German:"familie",Turkish:"aile",Arabic:"عائلة",Hindi:"परिवार",Portuguese:"família",Russian:"семья",Japanese:"家族",Korean:"가족",Chinese:"家庭",Italian:"famiglia",Dutch:"familie",Polish:"rodzina",Urdu:"خاندان",Uzbek:"oila"},school:{Spanish:"escuela",French:"école",German:"schule",Turkish:"okul",Arabic:"مدرسة",Hindi:"स्कूल",Portuguese:"escola",Russian:"школа",Japanese:"学校",Korean:"학교",Chinese:"学校",Italian:"scuola",Dutch:"school",Polish:"szkoła",Urdu:"اسکول",Uzbek:"maktab"},book:{Spanish:"libro",French:"livre",German:"buch",Turkish:"kitap",Arabic:"كتاب",Hindi:"किताब",Portuguese:"livro",Russian:"книга",Japanese:"本",Korean:"책",Chinese:"书",Italian:"libro",Dutch:"boek",Polish:"książka",Urdu:"کتاب",Uzbek:"kitob"},today:{Spanish:"hoy",French:"aujourd'hui",German:"heute",Turkish:"bugün",Arabic:"اليوم",Hindi:"आज",Portuguese:"hoje",Russian:"сегодня",Japanese:"今日",Korean:"오늘",Chinese:"今天",Italian:"oggi",Dutch:"vandaag",Polish:"dzisiaj",Urdu:"آج",Uzbek:"bugun"},morning:{Spanish:"mañana",French:"matin",German:"morgen",Turkish:"sabah",Arabic:"صباح",Hindi:"सुबह",Portuguese:"manhã",Russian:"утро",Japanese:"朝",Korean:"아침",Chinese:"早上",Italian:"mattina",Dutch:"ochtend",Polish:"rano",Urdu:"صبح",Uzbek:"ertalab"},night:{Spanish:"noche",French:"nuit",German:"nacht",Turkish:"gece",Arabic:"ليل",Hindi:"रात",Portuguese:"noite",Russian:"ночь",Japanese:"夜",Korean:"밤",Chinese:"晚上",Italian:"notte",Dutch:"nacht",Polish:"noc",Urdu:"رات",Uzbek:"kecha"},i:{Spanish:"yo",French:"je",German:"ich",Turkish:"ben",Arabic:"أنا",Hindi:"मैं",Portuguese:"eu",Russian:"я",Japanese:"私",Korean:"나",Chinese:"我",Italian:"io",Dutch:"ik",Polish:"ja",Urdu:"میں",Uzbek:"men"},you:{Spanish:"tú",French:"vous",German:"du",Turkish:"sen",Arabic:"أنت",Hindi:"तुम",Portuguese:"você",Russian:"ты",Japanese:"あなた",Korean:"당신",Chinese:"你",Italian:"tu",Dutch:"jij",Polish:"ty",Urdu:"آپ",Uzbek:"siz"},how:{Spanish:"cómo",French:"comment",German:"wie",Turkish:"nasıl",Arabic:"كيف",Hindi:"कैसे",Portuguese:"como",Russian:"как",Japanese:"どうやって",Korean:"어떻게",Chinese:"怎么",Italian:"come",Dutch:"hoe",Polish:"jak",Urdu:"کیسے",Uzbek:"qanday"},what:{Spanish:"qué",French:"quoi",German:"was",Turkish:"ne",Arabic:"ماذا",Hindi:"क्या",Portuguese:"o que",Russian:"что",Japanese:"何",Korean:"뭐",Chinese:"什么",Italian:"cosa",Dutch:"wat",Polish:"co",Urdu:"کیا",Uzbek:"nima"},money:{Spanish:"dinero",French:"argent",German:"geld",Turkish:"para",Arabic:"مال",Hindi:"पैसा",Portuguese:"dinheiro",Russian:"деньги",Japanese:"お金",Korean:"돈",Chinese:"钱",Italian:"soldi",Dutch:"geld",Polish:"pieniądze",Urdu:"پیسہ",Uzbek:"pul"},hospital:{Spanish:"hospital",French:"hôpital",German:"krankenhaus",Turkish:"hastane",Arabic:"مستشفى",Hindi:"अस्पताल",Portuguese:"hospital",Russian:"больница",Japanese:"病院",Korean:"병원",Chinese:"医院",Italian:"ospedale",Dutch:"ziekenhuis",Polish:"szpital",Urdu:"ہسپتال",Uzbek:"kasalxona"},toilet:{Spanish:"baño",French:"toilettes",German:"toilette",Turkish:"tuvalet",Arabic:"حمام",Hindi:"शौचालय",Portuguese:"banheiro",Russian:"туалет",Japanese:"トイレ",Korean:"화장실",Chinese:"厕所",Italian:"bagno",Dutch:"toilet",Polish:"toaleta",Urdu:"بیت الخلاء",Uzbek:"hojatxona"},hotel:{Spanish:"hotel",French:"hôtel",German:"hotel",Turkish:"otel",Arabic:"فندق",Hindi:"होटल",Portuguese:"hotel",Russian:"отель",Japanese:"ホテル",Korean:"호텔",Chinese:"酒店",Italian:"hotel",Dutch:"hotel",Polish:"hotel",Urdu:"ہوٹل",Uzbek:"mehmonxona"},airport:{Spanish:"aeropuerto",French:"aéroport",German:"flughafen",Turkish:"havalimanı",Arabic:"مطار",Hindi:"हवाई अड्डा",Portuguese:"aeroporto",Russian:"аэропорт",Japanese:"空港",Korean:"공항",Chinese:"机场",Italian:"aeroporto",Dutch:"luchthaven",Polish:"lotnisko",Urdu:"ہوائی اڈہ",Uzbek:"aeroport"}};
+
+const languages=["Spanish","French","German","Turkish","Arabic","Hindi","Portuguese","Russian","Japanese","Korean","Chinese","Italian","Dutch","Polish","Urdu","Uzbek","English","Bengali","Indonesian","Thai","Vietnamese","Greek","Swedish","Ukrainian","Persian"];
+const flags={Spanish:"🇪🇸",French:"🇫🇷",German:"🇩🇪",Turkish:"🇹🇷",Arabic:"🇸🇦",Hindi:"🇮🇳",Portuguese:"🇧🇷",Russian:"🇷🇺",Japanese:"🇯🇵",Korean:"🇰🇷",Chinese:"🇨🇳",Italian:"🇮🇹",Dutch:"🇳🇱",Polish:"🇵🇱",Urdu:"🇵🇰",Uzbek:"🇺🇿",English:"🇬🇧",Bengali:"🇧🇩",Indonesian:"🇮🇩",Thai:"🇹🇭",Vietnamese:"🇻🇳",Greek:"🇬🇷",Swedish:"🇸🇪",Ukrainian:"🇺🇦",Persian:"🇮🇷"};
+const langCodes={Spanish:"es-ES",French:"fr-FR",German:"de-DE",Turkish:"tr-TR",Arabic:"ar-SA",Hindi:"hi-IN",Portuguese:"pt-BR",Russian:"ru-RU",Japanese:"ja-JP",Korean:"ko-KR",Chinese:"zh-CN",Italian:"it-IT",Dutch:"nl-NL",Polish:"pl-PL",Urdu:"ur-PK",Uzbek:"uz-UZ",English:"en-US",Bengali:"bn-BD",Indonesian:"id-ID",Thai:"th-TH",Vietnamese:"vi-VN",Greek:"el-GR",Swedish:"sv-SE",Ukrainian:"uk-UA",Persian:"fa-IR"};
+const mmCodes={Spanish:"es",French:"fr",German:"de",Turkish:"tr",Arabic:"ar",Hindi:"hi",Portuguese:"pt",Russian:"ru",Japanese:"ja",Korean:"ko",Chinese:"zh",Italian:"it",Dutch:"nl",Polish:"pl",Urdu:"ur",Uzbek:"uz",English:"en",Bengali:"bn",Indonesian:"id",Thai:"th",Vietnamese:"vi",Greek:"el",Swedish:"sv",Ukrainian:"uk",Persian:"fa"};
+
+const travelData={"🇫🇷 France":{lang:"French",code:"fr-FR",phrases:[["Hello","Bonjour"],["Goodbye","Au revoir"],["Thank you","Merci"],["Please","S'il vous plaît"],["Yes","Oui"],["No","Non"],["Excuse me","Excusez-moi"],["Sorry","Désolé"],["How much?","Combien ça coûte?"],["Where is the bathroom?","Où sont les toilettes?"],["I need help","J'ai besoin d'aide"],["I am lost","Je suis perdu"],["Call the police","Appelez la police"],["The bill please","L'addition s'il vous plaît"],["Do you speak English?","Parlez-vous anglais?"],["I am allergic","Je suis allergique"],["I don't understand","Je ne comprends pas"],["Can you help me?","Pouvez-vous m'aider?"],["Where is the hotel?","Où est l'hôtel?"],["Where is the airport?","Où est l'aéroport?"],["I need a doctor","J'ai besoin d'un médecin"],["How are you?","Comment allez-vous?"],["Good morning","Bonjour"],["Good night","Bonne nuit"],["What time is it?","Quelle heure est-il?"],["One coffee please","Un café s'il vous plaît"],["Water please","De l'eau s'il vous plaît"],["Where is the train station?","Où est la gare?"],["Turn left","Tournez à gauche"],["Turn right","Tournez à droite"]]},"🇪🇸 Spain":{lang:"Spanish",code:"es-ES",phrases:[["Hello","Hola"],["Goodbye","Adiós"],["Thank you","Gracias"],["Please","Por favor"],["Yes","Sí"],["No","No"],["Excuse me","Disculpe"],["Sorry","Lo siento"],["How much?","¿Cuánto cuesta?"],["Where is the bathroom?","¿Dónde está el baño?"],["I need help","Necesito ayuda"],["I am lost","Estoy perdido"],["Call the police","Llame a la policía"],["The bill please","La cuenta por favor"],["Do you speak English?","¿Habla inglés?"],["I am allergic","Soy alérgico"],["I don't understand","No entiendo"],["Can you help me?","¿Puede ayudarme?"],["Where is the hotel?","¿Dónde está el hotel?"],["Where is the airport?","¿Dónde está el aeropuerto?"],["I need a doctor","Necesito un médico"],["How are you?","¿Cómo está?"],["Good morning","Buenos días"],["Good night","Buenas noches"],["What time is it?","¿Qué hora es?"],["One coffee please","Un café por favor"],["Water please","Agua por favor"],["Where is the train station?","¿Dónde está la estación?"],["Turn left","Gire a la izquierda"],["Turn right","Gire a la derecha"]]},"🇩🇪 Germany":{lang:"German",code:"de-DE",phrases:[["Hello","Hallo"],["Goodbye","Auf Wiedersehen"],["Thank you","Danke"],["Please","Bitte"],["Yes","Ja"],["No","Nein"],["Excuse me","Entschuldigung"],["Sorry","Es tut mir leid"],["How much?","Wie viel kostet das?"],["Where is the bathroom?","Wo ist die Toilette?"],["I need help","Ich brauche Hilfe"],["I am lost","Ich bin verloren"],["Call the police","Rufen Sie die Polizei"],["The bill please","Die Rechnung bitte"],["Do you speak English?","Sprechen Sie Englisch?"],["I am allergic","Ich bin allergisch"],["I don't understand","Ich verstehe nicht"],["Can you help me?","Können Sie mir helfen?"],["Where is the hotel?","Wo ist das Hotel?"],["Where is the airport?","Wo ist der Flughafen?"],["I need a doctor","Ich brauche einen Arzt"],["How are you?","Wie geht es Ihnen?"],["Good morning","Guten Morgen"],["Good night","Gute Nacht"],["What time is it?","Wie spät ist es?"],["One coffee please","Einen Kaffee bitte"],["Water please","Wasser bitte"],["Where is the train station?","Wo ist der Bahnhof?"],["Turn left","Links abbiegen"],["Turn right","Rechts abbiegen"]]},"🇯🇵 Japan":{lang:"Japanese",code:"ja-JP",phrases:[["Hello","こんにちは"],["Goodbye","さようなら"],["Thank you","ありがとう"],["Please","お願いします"],["Yes","はい"],["No","いいえ"],["Excuse me","すみません"],["Sorry","ごめんなさい"],["How much?","これはいくらですか？"],["Where is the bathroom?","トイレはどこですか？"],["I need help","助けてください"],["I am lost","迷子になりました"],["Call the police","警察を呼んでください"],["The bill please","お会計をお願いします"],["Do you speak English?","英語を話せますか？"],["I am allergic","アレルギーがあります"],["I don't understand","わかりません"],["Can you help me?","手伝ってくれますか？"],["Where is the hotel?","ホテルはどこですか？"],["Where is the airport?","空港はどこですか？"],["I need a doctor","医者が必要です"],["How are you?","お元気ですか？"],["Good morning","おはようございます"],["Good night","おやすみなさい"],["What time is it?","今何時ですか？"],["One coffee please","コーヒーを一つください"],["Water please","お水をください"],["Where is the train station?","駅はどこですか？"],["Turn left","左に曲がってください"],["Turn right","右に曲がってください"]]},"🇰🇷 Korea":{lang:"Korean",code:"ko-KR",phrases:[["Hello","안녕하세요"],["Goodbye","안녕히 가세요"],["Thank you","감사합니다"],["Please","부탁합니다"],["Yes","네"],["No","아니요"],["Excuse me","실례합니다"],["Sorry","죄송합니다"],["How much?","이것은 얼마예요?"],["Where is the bathroom?","화장실이 어디에 있나요?"],["I need help","도움이 필요해요"],["I am lost","길을 잃었어요"],["Call the police","경찰을 불러주세요"],["The bill please","계산서 주세요"],["Do you speak English?","영어 하세요?"],["I am allergic","알레르기가 있어요"],["I don't understand","이해 못해요"],["Can you help me?","도와주실 수 있나요?"],["Where is the hotel?","호텔이 어디예요?"],["Where is the airport?","공항이 어디예요?"],["I need a doctor","의사가 필요해요"],["How are you?","어떻게 지내세요?"],["Good morning","좋은 아침이에요"],["Good night","안녕히 주무세요"],["What time is it?","지금 몇 시예요?"],["One coffee please","커피 한 잔 주세요"],["Water please","물 주세요"],["Where is the train station?","기차역이 어디예요?"],["Turn left","왼쪽으로 도세요"],["Turn right","오른쪽으로 도세요"]]},"🇹🇷 Turkey":{lang:"Turkish",code:"tr-TR",phrases:[["Hello","Merhaba"],["Goodbye","Hoşça kal"],["Thank you","Teşekkür ederim"],["Please","Lütfen"],["Yes","Evet"],["No","Hayır"],["Excuse me","Affedersiniz"],["Sorry","Özür dilerim"],["How much?","Bu ne kadar?"],["Where is the bathroom?","Tuvalet nerede?"],["I need help","Yardıma ihtiyacım var"],["I am lost","Kayboldum"],["Call the police","Polis çağırın"],["The bill please","Hesap lütfen"],["Do you speak English?","İngilizce biliyor musunuz?"],["I am allergic","Alerjim var"],["I don't understand","Anlamıyorum"],["Can you help me?","Bana yardım eder misiniz?"],["Where is the hotel?","Otel nerede?"],["Where is the airport?","Havaalanı nerede?"],["I need a doctor","Bir doktora ihtiyacım var"],["How are you?","Nasılsınız?"],["Good morning","Günaydın"],["Good night","İyi geceler"],["What time is it?","Saat kaç?"],["One coffee please","Bir kahve lütfen"],["Water please","Su lütfen"],["Where is the train station?","Tren istasyonu nerede?"],["Turn left","Sola dönün"],["Turn right","Sağa dönün"]]},"🇸🇦 Arabia":{lang:"Arabic",code:"ar-SA",phrases:[["Hello","مرحبا"],["Goodbye","وداعا"],["Thank you","شكرا"],["Please","من فضلك"],["Yes","نعم"],["No","لا"],["Excuse me","عذرا"],["Sorry","آسف"],["How much?","كم يكلف هذا؟"],["Where is the bathroom?","أين الحمام؟"],["I need help","أحتاج مساعدة"],["I am lost","لقد ضللت الطريق"],["Call the police","اتصل بالشرطة"],["The bill please","الفاتورة من فضلك"],["Do you speak English?","هل تتكلم الإنجليزية؟"],["I am allergic","لدي حساسية"],["I don't understand","لا أفهم"],["Can you help me?","هل يمكنك مساعدتي؟"],["Where is the hotel?","أين الفندق؟"],["Where is the airport?","أين المطار؟"],["I need a doctor","أحتاج طبيبا"],["How are you?","كيف حالك؟"],["Good morning","صباح الخير"],["Good night","تصبح على خير"],["What time is it?","كم الساعة؟"],["One coffee please","قهوة واحدة من فضلك"],["Water please","ماء من فضلك"],["Where is the train station?","أين محطة القطار؟"],["Turn left","انعطف يسارا"],["Turn right","انعطف يمينا"]]},"🇮🇳 India":{lang:"Hindi",code:"hi-IN",phrases:[["Hello","नमस्ते"],["Goodbye","अलविदा"],["Thank you","धन्यवाद"],["Please","कृपया"],["Yes","हाँ"],["No","नहीं"],["Excuse me","माफ़ कीजिए"],["Sorry","माफ़ करना"],["How much?","यह कितने का है?"],["Where is the bathroom?","शौचालय कहाँ है?"],["I need help","मुझे मदद चाहिए"],["I am lost","मैं खो गया हूँ"],["Call the police","पुलिस को बुलाओ"],["The bill please","बिल लाइए"],["Do you speak English?","क्या आप अंग्रेजी बोलते हैं?"],["I am allergic","मुझे एलर्जी है"],["I don't understand","मुझे समझ नहीं आया"],["Can you help me?","क्या आप मेरी मदद कर सकते हैं?"],["Where is the hotel?","होटल कहाँ है?"],["Where is the airport?","हवाई अड्डा कहाँ है?"],["I need a doctor","मुझे डॉक्टर चाहिए"],["How are you?","आप कैसे हैं?"],["Good morning","सुप्रभात"],["Good night","शुभ रात्रि"],["What time is it?","कितने बजे हैं?"],["One coffee please","एक कॉफ़ी दीजिए"],["Water please","पानी दीजिए"],["Where is the train station?","रेलवे स्टेशन कहाँ है?"],["Turn left","बाएँ मुड़ें"],["Turn right","दाएँ मुड़ें"]]},"🇮🇹 Italy":{lang:"Italian",code:"it-IT",phrases:[["Hello","Ciao"],["Goodbye","Arrivederci"],["Thank you","Grazie"],["Please","Per favore"],["Yes","Sì"],["No","No"],["Excuse me","Mi scusi"],["Sorry","Mi dispiace"],["How much?","Quanto costa?"],["Where is the bathroom?","Dov'è il bagno?"],["I need help","Ho bisogno di aiuto"],["I am lost","Mi sono perso"],["Call the police","Chiama la polizia"],["The bill please","Il conto per favore"],["Do you speak English?","Parla inglese?"],["I am allergic","Sono allergico"],["I don't understand","Non capisco"],["Can you help me?","Può aiutarmi?"],["Where is the hotel?","Dov'è l'hotel?"],["Where is the airport?","Dov'è l'aeroporto?"],["I need a doctor","Ho bisogno di un medico"],["How are you?","Come sta?"],["Good morning","Buongiorno"],["Good night","Buonanotte"],["What time is it?","Che ore sono?"],["One coffee please","Un caffè per favore"],["Water please","Acqua per favore"],["Where is the train station?","Dov'è la stazione?"],["Turn left","Gira a sinistra"],["Turn right","Gira a destra"]]},"🇺🇿 Uzbekistan":{lang:"Uzbek",code:"uz-UZ",phrases:[["Hello","Salom"],["Goodbye","Xayr"],["Thank you","Rahmat"],["Please","Iltimos"],["Yes","Ha"],["No","Yo'q"],["Excuse me","Kechirasiz"],["Sorry","Uzr"],["How much?","Bu qancha turadi?"],["Where is the bathroom?","Hojatxona qayerda?"],["I need help","Menga yordam kerak"],["I am lost","Men adashib qoldim"],["Call the police","Politsiyani chaqiring"],["The bill please","Hisobni bering"],["Do you speak English?","Inglizcha bilasizmi?"],["I am allergic","Mening allergiyam bor"],["I don't understand","Tushunmayapman"],["Can you help me?","Menga yordam bera olasizmi?"],["Where is the hotel?","Mehmonxona qayerda?"],["Where is the airport?","Aeroport qayerda?"],["I need a doctor","Menga shifokor kerak"],["How are you?","Qalaysiz?"],["Good morning","Xayrli tong"],["Good night","Xayrli tun"],["What time is it?","Soat necha?"],["One coffee please","Bitta qahva, iltimos"],["Water please","Suv, iltimos"],["Where is the train station?","Temir yo'l bekati qayerda?"],["Turn left","Chapga buriling"],["Turn right","O'ngga buriling"]]},"🇹🇭 Thailand":{lang:"Thai",code:"th-TH",phrases:[["Hello","สวัสดี"],["Goodbye","ลาก่อน"],["Thank you","ขอบคุณ"],["Please","กรุณา"],["Yes","ใช่"],["No","ไม่"],["Excuse me","ขอโทษ"],["Sorry","ขอโทษ"],["How much?","ราคาเท่าไหร่?"],["Where is the bathroom?","ห้องน้ำอยู่ที่ไหน?"],["I need help","ฉันต้องการความช่วยเหลือ"],["I am lost","ฉันหลงทาง"],["Call the police","เรียกตำรวจ"],["The bill please","เก็บเงินด้วย"],["Do you speak English?","คุณพูดภาษาอังกฤษได้ไหม?"],["I am allergic","ฉันแพ้"],["I don't understand","ฉันไม่เข้าใจ"],["Can you help me?","ช่วยฉันได้ไหม?"],["Where is the hotel?","โรงแรมอยู่ที่ไหน?"],["Where is the airport?","สนามบินอยู่ที่ไหน?"],["I need a doctor","ฉันต้องการหมอ"],["How are you?","สบายดีไหม?"],["Good morning","อรุณสวัสดิ์"],["Good night","ราตรีสวัสดิ์"],["What time is it?","กี่โมงแล้ว?"],["One coffee please","กาแฟหนึ่งที่"],["Water please","น้ำหนึ่งแก้ว"],["Where is the train station?","สถานีรถไฟอยู่ที่ไหน?"],["Turn left","เลี้ยวซ้าย"],["Turn right","เลี้ยวขวา"]]},"🇧🇩 Bangladesh":{lang:"Bengali",code:"bn-BD",phrases:[["Hello","হ্যালো"],["Goodbye","বিদায়"],["Thank you","ধন্যবাদ"],["Please","অনুগ্রহ করে"],["Yes","হ্যাঁ"],["No","না"],["Excuse me","মাফ করবেন"],["Sorry","দুঃখিত"],["How much?","এটার দাম কত?"],["Where is the bathroom?","বাথরুম কোথায়?"],["I need help","আমার সাহায্য দরকার"],["I am lost","আমি হারিয়ে গেছি"],["Call the police","পুলিশ ডাকুন"],["The bill please","বিল দিন"],["Do you speak English?","আপনি কি ইংরেজি বলতে পারেন?"],["I am allergic","আমার অ্যালার্জি আছে"],["I don't understand","আমি বুঝি না"],["Can you help me?","আপনি কি আমাকে সাহায্য করতে পারেন?"],["Where is the hotel?","হোটেল কোথায়?"],["Where is the airport?","বিমানবন্দর কোথায়?"],["I need a doctor","আমার একজন ডাক্তার দরকার"],["How are you?","আপনি কেমন আছেন?"],["Good morning","সুপ্রভাত"],["Good night","শুভ রাত্রি"],["What time is it?","এখন কয়টা বাজে?"],["One coffee please","একটা কফি দিন"],["Water please","পানি দিন"],["Where is the train station?","রেল স্টেশন কোথায়?"],["Turn left","বামে মোড় নিন"],["Turn right","ডানে মোড় নিন"]]}};
+
+const aslSigns={a:"🤜",b:"🖐",c:"🤏",d:"☝️",e:"🤞",f:"👌",g:"👉",h:"🤙",i:"🤙",j:"🔄",k:"✌️",l:"🤟",m:"✊",n:"✊",o:"⭕",p:"👇",q:"👇",r:"🤞",s:"✊",t:"✊",u:"✌️",v:"✌️",w:"🖖",x:"☝️",y:"🤙",z:"➰"};
+const aslDesc={a:"Fist, thumb side",b:"Flat hand up",c:"Curved C shape",d:"Index up, curl",e:"Fingers bent",f:"Index-thumb circle",g:"Index sideways",h:"Two fingers out",i:"Pinky up",j:"Pinky draws J",k:"Index+middle+thumb",l:"L shape",m:"3 fingers over thumb",n:"2 fingers over thumb",o:"Fingers form O",p:"Index down",q:"Index+thumb down",r:"Fingers crossed",s:"Fist, thumb over",t:"Thumb between",u:"2 fingers together",v:"2 fingers spread",w:"3 fingers spread",x:"Index hooks",y:"Thumb+pinky out",z:"Index draws Z"};
+
+const commonSignWords=[{word:"Hello",emoji:"👋"},{word:"Thank You",emoji:"🙏"},{word:"Yes",emoji:"✊"},{word:"No",emoji:"✋"},{word:"Help",emoji:"🤲"},{word:"Love",emoji:"🤟"},{word:"Please",emoji:"🫳"},{word:"Sorry",emoji:"🫶"},{word:"Good",emoji:"👍"},{word:"Bad",emoji:"👎"},{word:"Food",emoji:"🍽️"},{word:"Water",emoji:"💧"}];
+
+let selectedLang="Spanish", fromLang="auto", history=[], recognition=null, isListening=false, lastTranslation="";
+
+// build modal (TO language)
+const mg=document.getElementById('modalGrid');
+languages.forEach(lang=>{
+  const btn=document.createElement('button');
+  btn.className='modal-lang-btn'+(lang===selectedLang?' active':'');
+  btn.textContent=flags[lang]+' '+lang;
+  btn.onclick=()=>{
+    selectedLang=lang;
+    document.querySelectorAll('#modalGrid .modal-lang-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('selectedLangDisplay').textContent=flags[lang]+' '+lang;
+    closeModal();
+  };
+  mg.appendChild(btn);
+});
+
+// build FROM modal (with Auto Detect option)
+const fmg=document.getElementById('fromModalGrid');
+const autoBtn=document.createElement('button');
+autoBtn.className='modal-lang-btn active';
+autoBtn.textContent='🌐 Auto Detect';
+autoBtn.onclick=()=>{
+  fromLang='auto';
+  document.querySelectorAll('#fromModalGrid .modal-lang-btn').forEach(b=>b.classList.remove('active'));
+  autoBtn.classList.add('active');
+  document.getElementById('selectedFromLangDisplay').textContent='🌐 Auto Detect';
+  closeFromModal();
+};
+fmg.appendChild(autoBtn);
+languages.forEach(lang=>{
+  const btn=document.createElement('button');
+  btn.className='modal-lang-btn';
+  btn.textContent=flags[lang]+' '+lang;
+  btn.onclick=()=>{
+    fromLang=lang;
+    document.querySelectorAll('#fromModalGrid .modal-lang-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('selectedFromLangDisplay').textContent=flags[lang]+' '+lang;
+    closeFromModal();
+  };
+  fmg.appendChild(btn);
+});
+
+// build country buttons
+const cg=document.getElementById('countryGrid');
+Object.keys(travelData).forEach(country=>{
+  const btn=document.createElement('button');
+  btn.className='country-btn';
+  btn.textContent=country;
+  btn.onclick=()=>{document.querySelectorAll('.country-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');showPhrases(country);};
+  cg.appendChild(btn);
+});
+
+// build common signs
+const cs=document.getElementById('commonSigns');
+commonSignWords.forEach(({word,emoji})=>{
+  const div=document.createElement('div');
+  div.className='common-sign';
+  div.innerHTML=`<div class="cs-emoji">${emoji}</div><div class="cs-word">${word}</div>`;
+  div.onclick=()=>{document.getElementById('signInput').value=word;doSign();};
+  cs.appendChild(div);
+});
+
+function translateWord(w){const e=dict[w.toLowerCase()];return e&&e[selectedLang]?e[selectedLang]:w;}
+async function doTranslate(){
+  const input=document.getElementById('inputText').value.trim();
+  if(!input)return;
+
+  // Show loading state
+  const btn=document.querySelector('.btn-translate');
+  btn.textContent='Translating…';
+  btn.disabled=true;
+
+  try {
+    const sourceCode = fromLang==='auto' ? 'autodetect' : mmCodes[fromLang];
+    const targetCode = mmCodes[selectedLang];
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(input)}&langpair=${sourceCode}|${targetCode}`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if(!data.responseData || !data.responseData.translatedText) throw new Error('No translation');
+    const translated = data.responseData.translatedText;
+
+    lastTranslation = translated;
+    document.getElementById('resultText').textContent = translated;
+    document.getElementById('resultLang').textContent = flags[selectedLang]+' '+selectedLang;
+    document.getElementById('resultBox').classList.add('show');
+    history.unshift({orig:input, trans:translated, lang:selectedLang});
+    renderHistory();
+  } catch(err) {
+    // Fallback to dictionary if API fails
+    const translated=input.split(/\s+/).map(w=>translateWord(w)).join(' ');
+    lastTranslation=translated;
+    document.getElementById('resultText').textContent=translated;
+    document.getElementById('resultLang').textContent=flags[selectedLang]+' '+selectedLang;
+    document.getElementById('resultBox').classList.add('show');
+    history.unshift({orig:input,trans:translated,lang:selectedLang});
+    renderHistory();
+    showToast('Using offline dictionary 📖');
+  } finally {
+    btn.textContent='Translate ✦';
+    btn.disabled=false;
+  }
+}
+
+function copyTranslation(){
+  if(!lastTranslation)return;
+  navigator.clipboard.writeText(lastTranslation).then(()=>showToast('Copied! 📋')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=lastTranslation;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('Copied! 📋');
+  });
+}
+function speakTranslation(){if(lastTranslation)speak(lastTranslation,langCodes[selectedLang]||'en');}
+function speak(text,lang){window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang=lang;window.speechSynthesis.speak(u);}
+
+function toggleMic(){
+  const SRClass=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SRClass){showToast('Use Chrome for voice input 🎤');return;}
+  if(isListening){if(recognition)recognition.stop();return;}
+  recognition=new SRClass();recognition.lang=(fromLang!=='auto'&&langCodes[fromLang])?langCodes[fromLang]:'en-US';recognition.continuous=false;recognition.interimResults=false;
+  recognition.onstart=()=>{isListening=true;document.getElementById('micBtn').classList.add('listening');document.getElementById('micBtn').textContent='⏹';showToast('Listening… speak now 🎤');};
+  recognition.onresult=e=>{document.getElementById('inputText').value=e.results[0][0].transcript;doTranslate().catch(()=>{});};
+  recognition.onerror=e=>{showToast('Mic error: '+e.error);};
+  recognition.onend=()=>{isListening=false;document.getElementById('micBtn').classList.remove('listening');document.getElementById('micBtn').textContent='🎤';};
+  try{recognition.start();}catch(e){showToast('Could not start mic');}
+}
+
+function showPhrases(country){
+  const data=travelData[country];
+  document.getElementById('phraseList').innerHTML=data.phrases.map(([en,tr])=>`
+    <li><span class="en">${en}</span><span class="tr">${tr}</span>
+    <button class="phrase-speak" onclick="speak('${tr.replace(/'/g,"\\'").replace(/"/g,'&quot;')}','${data.code}')">🔊</button></li>`).join('');
+}
+
+function doSign(){
+  const raw=document.getElementById('signInput').value.trim();
+  if(!raw){showToast('Please type something!');return;}
+  // find English
+  let english=raw.toLowerCase();
+  for(const [eng,translations] of Object.entries(dict)){
+    for(const val of Object.values(translations)){
+      if(val.toLowerCase()===english){english=eng;break;}
+    }
+  }
+  // word by word
+  const words=english.split(/\s+/).map(w=>{
+    for(const [eng,translations] of Object.entries(dict))
+      for(const val of Object.values(translations))
+        if(val.toLowerCase()===w)return eng;
+    return w;
+  });
+  english=words.join(' ');
+
+  document.getElementById('signEnglish').innerHTML=
+    english.toLowerCase()!==raw.toLowerCase()
+      ?`✨ "<span style="color:#c48a9a">${raw}</span>" → <strong style="color:#c48a9a">${english}</strong>`
+      :`Showing signs for: <strong style="color:#c48a9a">${english}</strong>`;
+
+  const container=document.getElementById('signResult');
+  container.innerHTML='';
+  english.toLowerCase().split(/\s+/).forEach((word,wi)=>{
+    if(wi>0){const g=document.createElement('div');g.style.cssText='width:10px;';container.appendChild(g);}
+    [...word].forEach(char=>{
+      if(!/[a-z]/.test(char))return;
+      const card=document.createElement('div');
+      card.className='sign-card';
+      card.innerHTML=`<div class="sign-emoji">${aslSigns[char]||'✋'}</div><div class="sign-letter">${char.toUpperCase()}</div><div class="sign-desc">${aslDesc[char]||''}</div>`;
+      container.appendChild(card);
+    });
+  });
+  document.getElementById('signResultCard').style.display='block';
+}
+
+function renderHistory(){
+  const list=document.getElementById('historyList');
+  if(history.length===0){list.innerHTML='<li class="empty-history">No translations yet 🌸</li>';return;}
+  list.innerHTML=history.slice(0,10).map(h=>`<li><span class="orig">${h.orig}</span><span class="arrow">→</span><span class="trans">${h.trans} <span style="font-size:.72rem">${flags[h.lang]}</span></span></li>`).join('');
+}
+function clearHistory(){history=[];renderHistory();document.getElementById('resultBox').classList.remove('show');}
+function openModal(){document.getElementById('modalOverlay').classList.add('show');}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('show');}
+function handleOverlayClick(e){if(e.target===document.getElementById('modalOverlay'))closeModal();}
+function openFromModal(){document.getElementById('fromModalOverlay').classList.add('show');}
+function closeFromModal(){document.getElementById('fromModalOverlay').classList.remove('show');}
+function handleFromOverlayClick(e){if(e.target===document.getElementById('fromModalOverlay'))closeFromModal();}
+function switchTab(name,btn){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.getElementById(name).classList.add('active');btn.classList.add('active');}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+document.getElementById('inputText').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();doTranslate();}});
+document.getElementById('signInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();doSign();}});
+
+// ─── BARCODE FOOD SCANNER ────────────────────────────────────────────────────
+
+const PRESET_ALLERGENS = [
+  {id:'gluten',    label:'🌾 Gluten',      level:'danger',  keywords:['wheat','gluten','barley','rye','malt','spelt','triticale']},
+  {id:'dairy',     label:'🥛 Dairy',       level:'danger',  keywords:['milk','lactose','whey','casein','butter','cream','cheese','yogurt']},
+  {id:'eggs',      label:'🥚 Eggs',        level:'danger',  keywords:['egg','albumin','globulin','lecithin','lysozyme','mayonnaise']},
+  {id:'peanuts',   label:'🥜 Peanuts',     level:'danger',  keywords:['peanut','groundnut','arachis']},
+  {id:'treenuts',  label:'🌰 Tree Nuts',   level:'danger',  keywords:['almond','cashew','walnut','pistachio','pecan','hazelnut','macadamia','brazil nut','pine nut']},
+  {id:'soy',       label:'🌱 Soy',         level:'danger',  keywords:['soy','soya','tofu','miso','tempeh','edamame']},
+  {id:'fish',      label:'🐟 Fish',        level:'danger',  keywords:['fish','salmon','tuna','cod','tilapia','anchovy','sardine','bass','flounder']},
+  {id:'shellfish', label:'🦐 Shellfish',   level:'danger',  keywords:['shrimp','crab','lobster','clam','oyster','scallop','mussel','prawn','crawfish']},
+  {id:'sesame',    label:'🫘 Sesame',      level:'danger',  keywords:['sesame','tahini','til','gingelly']},
+  {id:'mustard',   label:'🌼 Mustard',     level:'caution', keywords:['mustard','sinapis']},
+  {id:'celery',    label:'🥬 Celery',      level:'caution', keywords:['celery','celeriac']},
+  {id:'lupin',     label:'🌸 Lupin',       level:'caution', keywords:['lupin','lupine']},
+  {id:'sulphites', label:'🫧 Sulphites',   level:'caution', keywords:['sulphite','sulfite','sulphur dioxide','sulfur dioxide','so2']},
+  {id:'sugar',     label:'🍬 Sugar',       level:'caution', keywords:['sugar','sucrose','fructose','corn syrup','high fructose','glucose syrup','dextrose']},
+  {id:'msg',       label:'🧂 MSG',         level:'caution', keywords:['monosodium glutamate','msg','e621']},
+  {id:'artificial',label:'🎨 Artificial Colors', level:'caution', keywords:['red 40','yellow 5','yellow 6','blue 1','blue 2','tartrazine','allura','sunset yellow']},
+];
+
+let selectedAllergens = new Set(JSON.parse(localStorage.getItem('lp_allergens')||'[]'));
+let customAllergens   = JSON.parse(localStorage.getItem('lp_custom_allergens')||'[]');
+
+function saveAllergenPrefs(){
+  localStorage.setItem('lp_allergens', JSON.stringify([...selectedAllergens]));
+  localStorage.setItem('lp_custom_allergens', JSON.stringify(customAllergens));
+}
+
+function renderAllergyGrid(){
+  const grid = document.getElementById('allergyGrid');
+  const allItems = [
+    ...PRESET_ALLERGENS,
+    ...customAllergens.map(c=>({id:'custom_'+c, label:'✏️ '+c, level:'danger', keywords:[c.toLowerCase()], custom:true}))
+  ];
+  grid.innerHTML = allItems.map(a=>{
+    const sel = selectedAllergens.has(a.id);
+    return `<div class="allergy-chip${sel?' selected '+a.level:''}" onclick="toggleAllergen('${a.id}')" data-id="${a.id}" data-level="${a.level}">${a.label}${a.custom?` <span onclick="removeCustom('${a.id}',event)" style="margin-left:auto;opacity:.6;font-size:.7rem">✕</span>`:''}</div>`;
+  }).join('');
+}
+
+function toggleAllergen(id){
+  if(selectedAllergens.has(id)) selectedAllergens.delete(id);
+  else selectedAllergens.add(id);
+  saveAllergenPrefs();
+  renderAllergyGrid();
+}
+
+function addCustomAllergy(){
+  const inp = document.getElementById('customAllergyInput');
+  const val = inp.value.trim();
+  if(!val) return;
+  if(!customAllergens.includes(val)){
+    customAllergens.push(val);
+    selectedAllergens.add('custom_'+val);
+    saveAllergenPrefs();
+    renderAllergyGrid();
+  }
+  inp.value='';
+}
+
+function removeCustom(id, e){
+  e.stopPropagation();
+  const name = id.replace('custom_','');
+  customAllergens = customAllergens.filter(c=>c!==name);
+  selectedAllergens.delete(id);
+  saveAllergenPrefs();
+  renderAllergyGrid();
+}
+
+document.getElementById('customAllergyInput').addEventListener('keydown',e=>{if(e.key==='Enter')addCustomAllergy();});
+document.getElementById('barcodeInput').addEventListener('keydown',e=>{if(e.key==='Enter')doBarcodeScan();});
+
+function quickScan(barcode){
+  document.getElementById('barcodeInput').value = barcode;
+  doBarcodeScan();
+}
+
+async function doBarcodeScan(){
+  const barcode = document.getElementById('barcodeInput').value.trim();
+  if(!barcode){showToast('Please enter a barcode number 🔍');return;}
+  const resultDiv = document.getElementById('scanResult');
+  resultDiv.innerHTML = `<div class="scan-loading"><span class="spin">⏳</span>Looking up product…</div>`;
+
+  try {
+    const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
+    const data = await res.json();
+
+    if(data.status === 0){
+      resultDiv.innerHTML = `<div class="scan-loading">❌ Product not found. Try another barcode!</div>`;
+      return;
+    }
+
+    const product = data.product;
+    const name = product.product_name || product.product_name_en || 'Unknown Product';
+    const brand = product.brands || '';
+    const image = product.image_front_small_url || product.image_url || '';
+    const ingredientsText = (product.ingredients_text || product.ingredients_text_en || '').toLowerCase();
+    const allergensTags = (product.allergens_tags || []).join(' ');
+
+    // Build allergen context
+    const allItems = [
+      ...PRESET_ALLERGENS,
+      ...customAllergens.map(c=>({id:'custom_'+c, label:c, level:'danger', keywords:[c.toLowerCase()]}))
+    ];
+    const myAllergens = allItems.filter(a=>selectedAllergens.has(a.id));
+
+    // Check each selected allergen against ingredients
+    let foundDanger = [];
+    let foundCaution = [];
+
+    myAllergens.forEach(allergen => {
+      const hit = allergen.keywords.some(kw =>
+        ingredientsText.includes(kw) || allergensTags.includes(kw)
+      );
+      if(hit){
+        if(allergen.level === 'danger') foundDanger.push(allergen.label);
+        else foundCaution.push(allergen.label);
+      }
+    });
+
+    // Classify all ingredients
+    const rawIngredients = ingredientsText
+      .replace(/\(.*?\)/g, '')
+      .split(/[,;]/)
+      .map(s=>s.trim())
+      .filter(s=>s.length > 1 && s.length < 60)
+      .slice(0, 30);
+
+    const classifiedIngredients = rawIngredients.map(ing => {
+      const isDanger = PRESET_ALLERGENS.filter(a=>a.level==='danger')
+        .some(a=>a.keywords.some(kw=>ing.includes(kw)));
+      const isCaution = PRESET_ALLERGENS.filter(a=>a.level==='caution')
+        .some(a=>a.keywords.some(kw=>ing.includes(kw)));
+      const isMyDanger = myAllergens.filter(a=>a.level==='danger')
+        .some(a=>a.keywords.some(kw=>ing.includes(kw)));
+      const isMyWarn = myAllergens.filter(a=>a.level==='caution')
+        .some(a=>a.keywords.some(kw=>ing.includes(kw)));
+
+      let status = 'safe';
+      if(isMyDanger) status = 'danger';
+      else if(isMyWarn || isCaution) status = 'caution';
+      return {name: ing, status};
+    });
+
+    const overall = foundDanger.length > 0 ? 'danger' : foundCaution.length > 0 ? 'caution' : 'safe';
+    renderBarcodeResult({name, brand, image, ingredients: classifiedIngredients, overall, foundDanger, foundCaution, barcode});
+
+  } catch(err) {
+    resultDiv.innerHTML = `<div class="scan-loading">⚠️ Error: ${err.message}</div>`;
+  }
+}
+
+function renderBarcodeResult({name, brand, image, ingredients, overall, foundDanger, foundCaution, barcode}){
+  const verdictClass = overall==='safe'?'safe-verdict':overall==='danger'?'danger-verdict':'warn-verdict';
+  const verdictIcon = overall==='safe'?'✅':overall==='danger'?'🚫':'⚠️';
+  const verdictTitle = overall==='safe'?'Safe to eat!':overall==='danger'?'Not safe — allergens found!':'Proceed with caution';
+  const summary = overall==='safe'
+    ? 'No allergens from your list were detected.'
+    : overall==='danger'
+    ? `Contains: ${foundDanger.join(', ')}`
+    : `May contain: ${foundCaution.join(', ')}`;
+
+  const pillsHtml = ingredients.map(ing=>`<span class="ing-pill ${ing.status}">${ing.name}</span>`).join('');
+  const alertHtml = foundDanger.length
+    ? `<div style="margin-top:.6rem;font-size:.78rem;color:#c0243a;">🚨 Allergens found: ${foundDanger.join(', ')}</div>`
+    : foundCaution.length
+    ? `<div style="margin-top:.6rem;font-size:.78rem;color:#c06a10;">⚠️ Caution: ${foundCaution.join(', ')}</div>`
+    : '';
+
+  document.getElementById('scanResult').innerHTML = `
+    <div class="scan-result-card">
+      <div style="display:flex;align-items:center;gap:1rem;padding:.8rem 1.2rem;background:rgba(255,255,255,.6);border-bottom:1px solid rgba(240,216,228,.4);">
+        ${image ? `<img src="${image}" style="width:54px;height:54px;object-fit:contain;border-radius:8px;border:1px solid #f0d8e4;">` : '<div style="width:54px;height:54px;border-radius:8px;background:#f4c6cc;display:flex;align-items:center;justify-content:center;font-size:1.5rem;">🛒</div>'}
+        <div>
+          <div style="font-weight:600;font-size:.95rem;color:var(--text)">${name}</div>
+          ${brand ? `<div style="font-size:.78rem;color:var(--soft)">${brand}</div>` : ''}
+          <div style="font-size:.7rem;color:#c5b0c5;margin-top:.1rem;">Barcode: ${barcode}</div>
+        </div>
+      </div>
+      <div class="scan-verdict ${verdictClass}">
+        <div class="verdict-icon">${verdictIcon}</div>
+        <div class="verdict-text">
+          <h3>${verdictTitle}</h3>
+          <p>${summary}</p>
+          ${alertHtml}
+        </div>
+      </div>
+      <div class="ingredient-breakdown">
+        <div class="breakdown-title">Ingredient Breakdown</div>
+        <div class="ingredient-pill-row">${pillsHtml || '<span style="color:var(--soft);font-size:.82rem;font-style:italic">No ingredient details available</span>'}</div>
+        <div class="legend-row" style="margin-top:.6rem;">
+          <span><span class="legend-dot" style="background:#ff8fa3;"></span>Danger</span>
+          <span><span class="legend-dot" style="background:#f6b47a;"></span>Caution</span>
+          <span><span class="legend-dot" style="background:#7ecfb8;"></span>Safe</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+// Init
+renderAllergyGrid();
+</script>
+</body>
+</html>
